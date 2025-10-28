@@ -4,4 +4,11 @@ from django.contrib.auth.models import AbstractUser
 
 # Create your models here.
 class MyUser(AbstractUser):
-    password = models.CharField(max_length=20)
+    """
+    Always use AbstractUser when just want to add to the user, but if want full control
+    of the fields use AbstractBaseUser
+    """
+    provider = models.CharField(max_length=20, blank=True, null=True)
+    provider_id = models.CharField(max_length=20, blank=True, null=True)
+    access_token = models.TextField(blank=True)
+    refresh_token = models.TextField(blank=True)
