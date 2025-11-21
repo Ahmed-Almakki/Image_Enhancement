@@ -11,7 +11,9 @@ def csrf_token(request):
 def register_v1(request):
     try:
         if request.method == 'POST':
-            body = json.loads(request.body.decode('utf-8'))
+            print(f'request body: {request.body}')
+            # IN THE MIDDLEWARE THE BODY BECOME new_body
+            body = getattr(request, 'new_body')
             username = body['username']
             email = body['email']
             first_name = body.get('first_name', '')
@@ -28,7 +30,8 @@ def register_v1(request):
 
 
 def login_v1(request):
-    body = json.loads(request.body.decode('utf-8'))
+    print(f'request body: {request.body}')
+    body = request.body
     print(f'user name {body.get("email")}\n{body.get("password")}')
     user = authenticate(request, email=body.get('email'), password=body.get('password'))
     print('user auth', user)
