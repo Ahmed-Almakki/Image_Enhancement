@@ -15,6 +15,9 @@ environ.Env.read_env(BASE_DIR / '.env')
 
 
 def sendState(request):
+    """
+    send the url of the Oauth from the backend to front without reveling any info in the front
+    """
     from urllib.parse import urlencode
     print(f'request {request}\n\n\n get {request.GET}')
     state = secrets.token_urlsafe(24)
@@ -80,8 +83,9 @@ def loginRegister(request):
             user.set_unusable_password()
             user.save()
 
+        # login to create the session id and other things
         login(request, user)
-        return redirect(env('FRONTEND_URL') + '/')
+        return redirect(env('FRONTEND_URL') + '/')  # to be able to go to home page
     except Exception as e:
         print(f'error due to {e}')
-        return JsonResponse({'status': False, 'message': f'Error becuase of {e}'})
+        return JsonResponse({'status': False, 'message': f'Error because of {e}'})
