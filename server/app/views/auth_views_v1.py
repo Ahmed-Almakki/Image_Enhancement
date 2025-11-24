@@ -25,16 +25,13 @@ def register_v1(request):
             return JsonResponse({'status': True, "message": "Successfully Create User"}, status=201)
         return JsonResponse({'status': False, 'message': "Can not create User"}, status=401)
     except Exception as e:
-        print(f'error is becuase\n{e}')
-        return JsonResponse({'status': False, 'message': f'Can not create user becuase {e}'}, status=400)
+        print(f'error is because\n{e}')
+        return JsonResponse({'status': False, 'message': f'Can not create user because {e}'}, status=400)
 
 
 def login_v1(request):
-    print(f'request body: {request.body}')
     body = request.body
-    print(f'user name {body.get("email")}\n{body.get("password")}')
     user = authenticate(request, email=body.get('email'), password=body.get('password'))
-    print('user auth', user)
     if user is None:
         return JsonResponse({'status': False, 'message': 'Invalid Credentials'}, status=401)
     login(request, user)
