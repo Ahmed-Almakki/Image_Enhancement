@@ -16,9 +16,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 env = environ.Env()
 environ.Env.read_env(BASE_DIR / '.env')
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
-
-print(f'env file {env("DB_NAME")}')
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
@@ -45,12 +42,32 @@ INSTALLED_APPS = [
 
 AUTH_USER_MODEL = 'app.MyUser'
 
-CORS_ALLOW_CREDENTIALS = True  # becuase the frontend well send session cookie and i have to allow it
-# you must to have white list whose are authorized to do this becuase it is a vulnrablilty
+
+# Cors
+# you must have white list whose are authorized to do this because it is a vulnerability
+CORS_ALLOW_CREDENTIALS = True  # because the frontend well send session cookie and I have to allow it
+
+# Either comment this or comment the CROS_ALLOWED_ORIGINS
+CORS_ALLOW_ALL_ORIGINS = True  # only for development!
 
 
-### commented the below one becuae of the allowed origins
-CORS_ALLOW_ALL_ORIGINS = True   # only for development!
+#CSRF
+SESSION_COOKIE_SECURE = False        # Only True if HTTPS
+CSRF_COOKIE_SAMESITE = 'lax'   # can be 'Lax' -> (cookie only sent on same-site requests, not cross-site POSTs).
+                                # allows the cookie to be sent across different origins
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:8080"
+]
+
+
+# Session
+SESSION_COOKIE_SAMESITE = 'Lax'  # 'None' needs Secure=True (HTTPS)
+SESSION_COOKIE_SECURE = False      # Only True if HTTPS
+
+
+# Could be help
+# CSRF_TRUSTED_ORIGINS = ['https://' + os.environ.get('CODIO_HOSTNAME') + '-8000.codio.io']
+
 
 # CORS_ALLOWED_ORIGINS = [
 #     "http://localhost:8080",
