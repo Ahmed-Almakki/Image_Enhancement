@@ -85,7 +85,7 @@ def loginRegister(request):
 
         # login to create the session id and other things
         login(request, user)
-        return redirect(env('FRONTEND_URL') + '/')  # to be able to go to home page
+        return redirect(env('FRONTEND_URL') + '/oauth')  # to be able to go to home page
     except Exception as e:
         print(f'error due to {e}')
         return JsonResponse({'status': False, 'message': f'Error because of {e}'})
