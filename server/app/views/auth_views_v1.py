@@ -1,17 +1,18 @@
 from django.contrib.auth import authenticate, login, get_user_model
 from django.http import JsonResponse
-from django.middleware.csrf import get_token
-import json
+from django.views.decorators.csrf import ensure_csrf_cookie
 
 
+@ensure_csrf_cookie
 def csrf_token(request):
-    return JsonResponse({'token': get_token(request)})
+    return JsonResponse({
+        "id": "ok"
+    })
 
 
 def register_v1(request):
     try:
         if request.method == 'POST':
-            print(f'request body: {request.body}')
             # IN THE MIDDLEWARE THE BODY BECOME new_body
             body = getattr(request, 'new_body')
             username = body['username']
@@ -21,18 +22,21 @@ def register_v1(request):
             password = body['password']
             user = get_user_model().objects.create_user(username=username, email=email,
                                                         first_name=first_name, last_name=last_name, password=password)
-            print('created', user)
             return JsonResponse({'status': True, "message": "Successfully Create User"}, status=201)
         return JsonResponse({'status': False, 'message': "Can not create User"}, status=401)
     except Exception as e:
-        print(f'error is because\n{e}')
         return JsonResponse({'status': False, 'message': f'Can not create user because {e}'}, status=400)
 
 
 def login_v1(request):
-    body = request.body
-    user = authenticate(request, email=body.get('email'), password=body.get('password'))
-    if user is None:
-        return JsonResponse({'status': False, 'message': 'Invalid Credentials'}, status=401)
-    login(request, user)
-    return JsonResponse({'status': True, 'message': 'Successfully LoggedIN'})
+    try:
+        user = get_user_model()
+        body = getattr(request, 'new_body')
+        user = authenticate(request, email=body.get('email'), password=body.get('password'))
+        if user is None:
+            return JsonResponse({'status': False, 'message': 'Invalid Credentials'}, status=401)
+        login(request, user)
+        return JsonResponse({'status': True, 'data': {'id': user.id, 'first_name': user.first_name}})
+    except Exception as e:
+        print(f'error because of {e}')
+        return JsonResponse({'status': False, 'message': 'Faild to Login'})

@@ -19,6 +19,6 @@ class RequestMiddlewate:
             request.new_body = data
 
         response = self.get_response(request)
-        print('return the response')
+        print('return the response', request.method, request.content_type)
         return response
 

@@ -25,8 +25,6 @@ SECRET_KEY = 'django-insecure-5mah0^wy4lecsho0k5f2p5t%+#-%m9xkcqaw_v&^n4!lds)9-p
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
-
 # Application definition
 
 INSTALLED_APPS = [
@@ -42,6 +40,7 @@ INSTALLED_APPS = [
 
 AUTH_USER_MODEL = 'app.MyUser'
 
+ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
 # Cors
 # you must have white list whose are authorized to do this because it is a vulnerability
@@ -53,12 +52,19 @@ CORS_ALLOW_ALL_ORIGINS = True  # only for development!
 
 #CSRF
 SESSION_COOKIE_SECURE = False        # Only True if HTTPS
-CSRF_COOKIE_SAMESITE = 'lax'   # can be 'Lax' -> (cookie only sent on same-site requests, not cross-site POSTs).
+CSRF_COOKIE_SAMESITE = 'Lax'   # can be 'Lax' -> (cookie only sent on same-site requests, not cross-site POSTs).
                                 # allows the cookie to be sent across different origins
 CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:8080"
+    "http://localhost:8080",
+    "http://127.0.0.1:8080"
 ]
 
+SESSION_COOKIE_AGE = 1209600  # 2 weeks in seconds
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+
+CSRF_COOKIE_DOMAIN = "127.0.0.1"
+SESSION_COOKIE_DOMAIN = '127.0.0.1'  # Explicitly set domain
+SESSION_SAVE_EVERY_REQUEST = True
 
 # Session
 SESSION_COOKIE_SAMESITE = 'Lax'  # 'None' needs Secure=True (HTTPS)
@@ -87,6 +93,12 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+AUTHENTICATION_BACKENDS = [
+    'server.app.backend.EmailAuthentication',  # your custom email backend
+    'django.contrib.auth.backends.ModelBackend',  # keep default if you still want username login
+]
+
 
 ROOT_URLCONF = 'server.urls'
 
