@@ -6,7 +6,7 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 @ensure_csrf_cookie
 def csrf_token(request):
     return JsonResponse({
-        "id": "ok"
+        "ok": True
     })
 
 
@@ -40,3 +40,4 @@ def login_v1(request):
     except Exception as e:
         print(f'error because of {e}')
         return JsonResponse({'status': False, 'message': 'Faild to Login'})
+
