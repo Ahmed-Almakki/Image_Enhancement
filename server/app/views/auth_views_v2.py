@@ -91,7 +91,7 @@ def loginRegister(request):
         print(f'error due to {e}')
         return JsonResponse({'status': False, 'message': f'Error because of {e}'})
 
-
+@login_required
 def current_user(request):
     print(f'info about request {request.user}')
     return JsonResponse({

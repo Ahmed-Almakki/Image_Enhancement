@@ -15,12 +15,14 @@ def register_v1(request):
         if request.method == 'POST':
             # IN THE MIDDLEWARE THE BODY BECOME new_body
             body = getattr(request, 'new_body')
+            print(f'regist body {body}')
             username = body['username']
             email = body['email']
             first_name = body.get('first_name', '')
             last_name = body.get('last_name', '')
+            is_active = body.get('is_active')
             password = body['password']
-            user = get_user_model().objects.create_user(username=username, email=email,
+            user = get_user_model().objects.create_user(username=username, email=email, is_active=is_active,
                                                         first_name=first_name, last_name=last_name, password=password)
             return JsonResponse({'status': True, "message": "Successfully Create User"}, status=201)
         return JsonResponse({'status': False, 'message': "Can not create User"}, status=401)
