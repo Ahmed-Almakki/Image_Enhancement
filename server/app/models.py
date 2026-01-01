@@ -20,16 +20,11 @@ class MyUser(AbstractUser):
 class Document(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     title = models.CharField(max_length=50)
-    original_path = models.CharField(max_length=255)
-    enhance_path = models.CharField(max_length=255)
-    expires_at = models.DateTimeField()
+    original_path = models.CharField(max_length=255, blank=True)
+    enhance_path = models.CharField(max_length=255, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    def save(self, *args, **kwargs):
-        if not self.expires_at:
-            self.expires_at = timezone.now() + timedelta(days=7)
-        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.title

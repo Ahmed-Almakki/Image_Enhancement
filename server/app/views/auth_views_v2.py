@@ -1,5 +1,6 @@
 from django.http import JsonResponse
 from django.contrib.auth import get_user_model, login
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect
 import environ
 from google.oauth2 import id_token
@@ -84,8 +85,18 @@ def loginRegister(request):
             user.save()
 
         # login to create the session id and other things
-        login(request, user)
+        login(request, user, backend='django.contrib.auth.backends.ModelBackend')
         return redirect(env('FRONTEND_URL') + '/oauth')  # to be able to go to home page
     except Exception as e:
         print(f'error due to {e}')
         return JsonResponse({'status': False, 'message': f'Error because of {e}'})
+
+
+def current_user(request):
+    print(f'info about request {request.user}')
+    return JsonResponse({
+        'data' : {
+            'id': request.user.id,
+            'first_name': request.user.first_name
+        }
+    })

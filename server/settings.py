@@ -42,42 +42,30 @@ AUTH_USER_MODEL = 'app.MyUser'
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
-# Cors
-# you must have white list whose are authorized to do this because it is a vulnerability
-CORS_ALLOW_CREDENTIALS = True  # because the frontend well send session cookie and I have to allow it
 
-# Either comment this or comment the CROS_ALLOWED_ORIGINS
-CORS_ALLOW_ALL_ORIGINS = True  # only for development!
+CORS_ALLOW_CREDENTIALS = True
 
 
-#CSRF
-SESSION_COOKIE_SECURE = False        # Only True if HTTPS
-CSRF_COOKIE_SAMESITE = 'Lax'   # can be 'Lax' -> (cookie only sent on same-site requests, not cross-site POSTs).
-                                # allows the cookie to be sent across different origins
+#session
+SESSION_COOKIE_SECURE = False  
+SESSION_COOKIE_SAMESITE = 'Lax'
+SESSION_COOKIE_AGE = 1209600  # 2 weeks in seconds
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+SESSION_SAVE_EVERY_REQUEST = True
+
+
+CSRF_COOKIE_SAMESITE = 'Lax' 
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:8080",
     "http://127.0.0.1:8080"
 ]
 
-SESSION_COOKIE_AGE = 1209600  # 2 weeks in seconds
-SESSION_EXPIRE_AT_BROWSER_CLOSE = False
-
-CSRF_COOKIE_DOMAIN = "127.0.0.1"
-SESSION_COOKIE_DOMAIN = '127.0.0.1'  # Explicitly set domain
-SESSION_SAVE_EVERY_REQUEST = True
-
-# Session
-SESSION_COOKIE_SAMESITE = 'Lax'  # 'None' needs Secure=True (HTTPS)
-SESSION_COOKIE_SECURE = False      # Only True if HTTPS
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:8080",
+    "http://127.0.0.1:8080",
+]
 
 
-# Could be help
-# CSRF_TRUSTED_ORIGINS = ['https://' + os.environ.get('CODIO_HOSTNAME') + '-8000.codio.io']
-
-
-# CORS_ALLOWED_ORIGINS = [
-#     "http://localhost:8080",
-# ]
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
@@ -128,7 +116,7 @@ DATABASES = {
         "NAME": env("DB_NAME"),
         "USER": env("DB_USER"),
         "PASSWORD": env("DB_PASSWORD"),
-        "HOST": "127.0.0.1",
+        "HOST": "localhost",
         "PORT": "5432",
     }
 }

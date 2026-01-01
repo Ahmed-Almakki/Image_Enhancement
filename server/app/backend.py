@@ -20,7 +20,7 @@ class EmailAuthentication(ModelBackend):
             return None
         try:
             checkUser = User.objects.get(email=email)
-        except User.DoseNotExist:
+        except User.DoesNotExist:
             return None
         if checkUser.check_password(password) and self.user_can_authenticate(checkUser):
             return checkUser
