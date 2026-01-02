@@ -62,7 +62,7 @@ def register_v1(request):
                 return JsonResponse({'status': True, "message": "User Must Activate Account"}, status=200)
 
         except Exception as e:
-            return JsonResponse({'status': False, 'message': f'Can not create user because {e}'}, status=500)
+            return JsonResponse({'status': False, 'message': f'Name or email or password is Empty'}, status=500)
     
 
 
