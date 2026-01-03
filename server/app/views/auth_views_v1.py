@@ -25,15 +25,18 @@ def csrf_token(request):
 def register_v1(request):
     if request.method == 'POST':
         # IN THE MIDDLEWARE THE BODY BECOME new_body
-        body = getattr(request, 'new_body')
+        body = getattr(request, 'new_body', {})
         User = get_user_model()
 
          # extracted important Info
-        username = body['username']
-        email = body['email']
-        first_name = body.get('first_name', '')
-        last_name = body.get('last_name', '')
-        password = body['password']
+        username = body.get('username')
+        email = body.get('email')
+        first_name = body.get('first_name')
+        last_name = body.get('last_name')
+        password = body.get('password')
+
+        if not username or not email or not first_name or not last_name or not password:
+            return JsonResponse({'status': False, 'message': 'UserName, Email, Password are required'}, status=400)
 
         if User.objects.filter(email=email).exists():
             return JsonResponse({'status': False, 'message': 'User Already Exists'}, status=400)
@@ -63,21 +66,29 @@ def register_v1(request):
 
         except Exception as e:
             return JsonResponse({'status': False, 'message': f'Name or email or password is Empty'}, status=500)
+    return JsonResponse({'status': False, 'message': 'Method are not Allowed'}, status=405)
     
 
 
 def login_v1(request):
-    try:
-        user = get_user_model()
-        body = getattr(request, 'new_body')
-        user = authenticate(request, email=body.get('email'), password=body.get('password'))
-        if user is None:
-            return JsonResponse({'status': False, 'message': 'Invalid Credentials'}, status=401)
-        login(request, user)
-        return JsonResponse({'status': True, 'data': {'id': user.id, 'first_name': user.first_name}})
-    except Exception as e:
-        print(f'error because of {e}')
-        return JsonResponse({'status': False, 'message': 'Faild to Login'})
+    if request.method == 'POST':
+        try:
+            user = get_user_model()
+            body = getattr(request, 'new_body')
+            user = authenticate(request, email=body.get('email'), password=body.get('password'))
+            if user is None:
+                return JsonResponse({'status': False, 'message': 'Invalid Credentials'}, status=401)
+            login(request, user)
+            print(f'pritn the action {body.get('rememberMe')}')
+            if body.get('rememberMe'):
+                request.session.set_expiry(None)
+            else:
+                request.session.set_expiry(0)
+            return JsonResponse({'status': True, 'data': {'id': user.id, 'first_name': user.first_name, 'rememberMe': body.get('rememberMe')}})
+        except Exception as e:
+            print(f'error because of {e}')
+            return JsonResponse({'status': False, 'message': 'Faild to Login'})
+    return JsonResponse({'status': False, 'message': 'You Have To Login'})
 
 
 def singout(request):
@@ -88,22 +99,19 @@ def singout(request):
 def activateAccount(request):
     if request.method == 'POST':
         body = getattr(request, 'new_body')
-        uid = body.get('uid')
-        token = body.get('token')
-        print(f'token {token}\tuid {uid}')
+        uid = body.get('uid', '')
+        token = body.get('token', '')
         User = get_user_model()
-        print(f'user model {User}')
+
         try:
             user_id = force_str(urlsafe_base64_decode(uid))
-            print(f'user id {user_id}')
             user = User.objects.get(pk=user_id)
-            print(f'user object {user}')
         except Exception:
             return JsonResponse({'status': False, 'message': "Can't Activate User Don't Exists"}, status=400)
 
         if default_token_generator.check_token(user, token):
-            print('insid eth check')
             user.is_active = True
             user.save()
             return JsonResponse({'status': True, 'data': {'id': user.id, 'first_name': user.first_name}}, status=201)
         return JsonResponse({'status': False, 'message': "Invalid Token"}, status=400)
+    return JsonResponse({'status': False, 'message': 'Go to Email and Activate Your Account'})
