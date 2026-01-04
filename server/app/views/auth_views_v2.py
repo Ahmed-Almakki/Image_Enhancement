@@ -1,6 +1,7 @@
 from django.http import JsonResponse
 from django.contrib.auth import get_user_model, login
 from django.contrib.auth.decorators import login_required
+from django.core.mail import EmailMessage
 from django.shortcuts import redirect
 import environ
 from google.oauth2 import id_token
@@ -9,6 +10,8 @@ import json
 from pathlib import Path
 import requests
 import secrets
+
+from ..models import RestPassword
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 env = environ.Env()
@@ -100,3 +103,17 @@ def current_user(request):
             'first_name': request.user.first_name
         }
     })
+
+
+def resetPassword(request):
+    if request.method == 'POST':
+        try:
+            body = getattr(request, 'new_body', {})
+            email = body.get('email')
+            if not email:
+                return JsonResponse({'status': False, 'message': 'You must Enter Email Addres'}, status= 400)
+            User = get_user_model()
+            user = User.objects.filter(email=email).exists()
+            if not user:
+                return JsonResponse({'status': True, 'message': "Check Your Email"})
+            
