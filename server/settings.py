@@ -169,3 +169,9 @@ EMAIL_HOST_USER = env('HOST_MAIL')
 EMAIL_HOST_PASSWORD = env('HOST_PASS')
 EMAIL_PORT = 587
 DEFAULT_FROM_EMAIL = f'Enhance-viosa <{env("HOST_MAIL")}>'
+
+
+# celery Configurations
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+CELERY_TIMEZONE = 'UTC'

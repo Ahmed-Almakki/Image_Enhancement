@@ -2,7 +2,6 @@ from django.http import JsonResponse
 from django.contrib.auth import get_user_model, login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.hashers import make_password
-from django.core.mail import EmailMessage
 from django.db import transaction
 from django.shortcuts import redirect
 from google.auth.transport import requests as google_requests
@@ -17,6 +16,7 @@ from datetime import timedelta
 from django.utils import timezone
 
 from ..models import RestPassword
+from ..tasks import SendEmail
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 env = environ.Env()
@@ -135,14 +135,7 @@ def resetPassword(request):
                         otp=hashdOtp, user=user,
                         expires_at=timezone.now() + timedelta(minutes=5)
                     )
-                    sendemail = EmailMessage(
-                        subject='Your Password Rest Code',
-                        body=f'''
-                            Your verification code is: {otp}
-                        ''',
-                        to=[f'{user.email}']
-                    )
-                    sendemail.send(fail_silently=True)
+                    SendEmail.delay(otp, user.email)
             
             except Exception:
                 return JsonResponse({'status': True, 'message': "If an account exists with this email, you will receive a verification code shortly."})
