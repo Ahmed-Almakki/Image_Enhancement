@@ -1,5 +1,5 @@
 from django.urls import path, include
-from ..views import auth_views_v1
+from ..views import auth_views_v1, auth_views_v2
 
 urlpatterns = [
     path('api/v1/', include('server.app.url.url_v1')),

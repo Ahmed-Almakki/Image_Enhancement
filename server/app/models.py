@@ -1,12 +1,8 @@
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser
-from django.utils import timezone
 from django.db import models
-from datetime import timedelta
 
 
-def otp_expiry_time():
-    return timezone.now() + timedelta(minutes=5)
 
 
 # Create your models here.
@@ -36,9 +32,9 @@ class Document(models.Model):
 
 class RestPassword(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    otp = models.CharField(max_length=20)
+    otp = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
-    expires_at = models.DateTimeField(default=otp_expiry_time)
+    expires_at = models.DateTimeField()
 
     def __str__(self):
         return f"OTP for {self.user.email}"

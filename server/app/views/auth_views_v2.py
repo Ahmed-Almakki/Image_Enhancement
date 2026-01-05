@@ -1,15 +1,20 @@
 from django.http import JsonResponse
 from django.contrib.auth import get_user_model, login
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.hashers import make_password
 from django.core.mail import EmailMessage
+from django.db import transaction
 from django.shortcuts import redirect
+from google.auth.transport import requests as google_requests
 import environ
 from google.oauth2 import id_token
-from google.auth.transport import requests as google_requests
 import json
 from pathlib import Path
 import requests
+import random
 import secrets
+from datetime import timedelta
+from django.utils import timezone
 
 from ..models import RestPassword
 
@@ -109,11 +114,38 @@ def resetPassword(request):
     if request.method == 'POST':
         try:
             body = getattr(request, 'new_body', {})
+            
             email = body.get('email')
             if not email:
                 return JsonResponse({'status': False, 'message': 'You must Enter Email Addres'}, status= 400)
-            User = get_user_model()
-            user = User.objects.filter(email=email).exists()
-            if not user:
-                return JsonResponse({'status': True, 'message': "Check Your Email"})
             
+            User = get_user_model()
+            user = User.objects.get(email=email)
+            if not user:
+                return JsonResponse({'status': True, 'message': "If an account exists with this email, you will receive a verification code shortly."})
+            
+            RestPassword.objects.filter(user=user).delete()
+
+            try:
+                with transaction.atomic():
+                    otp = f"{random.randint(1000, 9999)}"
+                    hashdOtp = make_password(otp)
+
+                    createopt = RestPassword.objects.create(
+                        otp=hashdOtp, user=user,
+                        expires_at=timezone.now() + timedelta(minutes=5)
+                    )
+                    sendemail = EmailMessage(
+                        subject='Your Password Rest Code',
+                        body=f'''
+                            Your verification code is: {otp}
+                        ''',
+                        to=[f'{user.email}']
+                    )
+                    sendemail.send(fail_silently=True)
+            
+            except Exception:
+                return JsonResponse({'status': True, 'message': "If an account exists with this email, you will receive a verification code shortly."})
+        except Exception:
+            return JsonResponse({'status': False, 'message': "If an account exists with this email, you will receive a verification code shortly."})
+    return JsonResponse({'status': False, 'message': "Wrong request Method"})
