@@ -168,4 +168,4 @@ EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_HOST_USER = env('HOST_MAIL')
 EMAIL_HOST_PASSWORD = env('HOST_PASS')
 EMAIL_PORT = 587
-# DEFAULT_FROM_EMAIL = f'Enhance-viosa <{env("HOST_MAIL")}>'
+DEFAULT_FROM_EMAIL = f'Enhance-viosa <{env("HOST_MAIL")}>'

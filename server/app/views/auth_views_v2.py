@@ -120,7 +120,7 @@ def resetPassword(request):
                 return JsonResponse({'status': False, 'message': 'You must Enter Email Addres'}, status= 400)
             
             User = get_user_model()
-            user = User.objects.get(email=email)
+            user = User.objects.filter(email=email).first()
             if not user:
                 return JsonResponse({'status': True, 'message': "If an account exists with this email, you will receive a verification code shortly."})
             
