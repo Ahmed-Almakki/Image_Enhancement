@@ -137,8 +137,45 @@ def resetPassword(request):
                     )
                     SendEmail.delay(otp, user.email)
             
+                return JsonResponse({'status': True, 'message': "If an account exists with this email, you will receive a verification code shortly."})
             except Exception:
                 return JsonResponse({'status': True, 'message': "If an account exists with this email, you will receive a verification code shortly."})
         except Exception:
             return JsonResponse({'status': False, 'message': "If an account exists with this email, you will receive a verification code shortly."})
     return JsonResponse({'status': False, 'message': "Wrong request Method"})
+
+
+def resendPassword(request):
+    if request.method == 'POST':
+        messageResponse = {
+            'status': True,
+            'message':"If an account exists with this email, you will receive a verification code shortly."
+            }
+
+        body = getattr(request, 'new_body', {})
+        email = body.get('email')
+        if not email:
+            return JsonResponse(messageResponse)
+        
+        User = get_user_model()
+        user = User.objects.filter(email=email).first()
+        if not user:
+            return JsonResponse(messageResponse)
+        
+        RestPassword.objects.filter(user=user).delete()
+        try:
+            with transaction.atomic():
+                otp = f"{random.randint(1000, 9999)}"
+                hashdOtp = make_password(otp)
+
+                RestPassword.objects.create(
+                    otp=hashdOtp,
+                    expires_at=timezone.now() + timedelta(minutes=5),
+                    user=user
+                )
+
+                SendEmail.delay(otp, user.email)
+            return JsonResponse(messageResponse)
+        except Exception:
+            return JsonResponse(messageResponse)
+    return JsonResponse({'status': False, 'message': 'Invalid Method'}, status=500)
