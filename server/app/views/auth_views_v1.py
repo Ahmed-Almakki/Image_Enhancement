@@ -10,6 +10,8 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 import environ
 from pathlib import Path
 
+from ..tasks import SendEmail
+
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 env = environ.Env()
 environ.Env.read_env(BASE_DIR / '.env')
@@ -54,14 +56,12 @@ def register_v1(request):
 
 
                 #send an email
-                email = EmailMessage(
-                    subject='Activate Your Account',
-                    body=f"""
+                emailMessage = f"""
                         Click on the Link Below in order to activate your account and enjoy your Amazing Image in Higher resolution\n
                         {active_link}
-                    """,
-                    to=[f'{user.email}'])
-                email.send(fail_silently=False)
+                    """
+                emailSubject = 'Activate Your Account',
+                SendEmail.delay(emailSubject, user.email, emailMessage)
                 return JsonResponse({'status': True, "message": "User Must Activate Account"}, status=200)
 
         except Exception as e:

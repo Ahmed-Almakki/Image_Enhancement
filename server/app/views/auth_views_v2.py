@@ -1,7 +1,7 @@
 from django.http import JsonResponse
 from django.contrib.auth import get_user_model, login
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.hashers import make_password
+from django.contrib.auth.hashers import make_password, check_password
 from django.db import transaction
 from django.shortcuts import redirect
 from google.auth.transport import requests as google_requests
@@ -28,7 +28,6 @@ def sendState(request):
     send the url of the Oauth from the backend to front without reveling any info in the front
     """
     from urllib.parse import urlencode
-    print(f'request {request}\n\n\n get {request.GET}')
     state = secrets.token_urlsafe(24)
     request.session['oauth_state'] = state
     params = {
@@ -78,17 +77,12 @@ def loginRegister(request):
 
         # check if the user exist then login if not then register
         User = get_user_model()
-        print('reach try')
         try:
-            print('try now to get info')
             user = User.objects.get(provider_id=google_id)
-            print(f'user in tyr {user}')
         except User.DoesNotExist:
-            print('except')
             user = User.objects.create(
                 email=email, provider_id=google_id, provider='Google',
                 first_name=first_name, last_name=last_name, access_token=access_token, refresh_token=refresh_token)
-            print(f'user in except {user}')
             user.set_unusable_password()
             user.save()
 
@@ -96,12 +90,10 @@ def loginRegister(request):
         login(request, user, backend='django.contrib.auth.backends.ModelBackend')
         return redirect(env('FRONTEND_URL') + '/oauth')  # to be able to go to home page
     except Exception as e:
-        print(f'error due to {e}')
         return JsonResponse({'status': False, 'message': f'Error because of {e}'})
 
 @login_required
 def current_user(request):
-    print(f'info about request {request.user}')
     return JsonResponse({
         'data' : {
             'id': request.user.id,
@@ -135,7 +127,9 @@ def resetPassword(request):
                         otp=hashdOtp, user=user,
                         expires_at=timezone.now() + timedelta(minutes=5)
                     )
-                    SendEmail.delay(otp, user.email)
+                    emailMessage = f'Your verification code is: {otp}'
+                    emailSubject = 'Your Password Rest Code'
+                    SendEmail.delay(emailSubject, user.email, emailMessage)
             
                 return JsonResponse({'status': True, 'message': "If an account exists with this email, you will receive a verification code shortly."})
             except Exception:
@@ -173,9 +167,46 @@ def resendPassword(request):
                     expires_at=timezone.now() + timedelta(minutes=5),
                     user=user
                 )
-
-                SendEmail.delay(otp, user.email)
+                
+                emailMessage = f'Your verification code is: {otp}'
+                emailSubject = 'Your Password Rest Code'
+                SendEmail.delay(emailSubject, user.email, emailMessage)
             return JsonResponse(messageResponse)
         except Exception:
             return JsonResponse(messageResponse)
-    return JsonResponse({'status': False, 'message': 'Invalid Method'}, status=500)
+    return JsonResponse({'status': False, 'message': 'Invalid Method'}, status=405)
+
+
+
+def checkOtp(request):
+    if request.method == 'POST':
+        body = getattr(request, 'new_body', {})
+        otp = body.get('otp')
+        email = body.get('email')
+        if not otp or not email:
+            return JsonResponse({'status': False, 'message': 'You Must Enter the code'}, status=400)
+        try:
+            User = get_user_model()
+            user = User.objects.filter(email=email).first()
+            hashed = RestPassword.objects.filter(user=user).first()
+            if not hashed:
+                return JsonResponse({'status': False, 'message': 'Invalid or Expired OTP'}, status=400)
+
+            if timezone.now() > hashed.expires_at:
+                hashed.delete()
+                return JsonResponse({'status': False, 'message': 'OTP expired'}, status=400)
+
+            if hashed.attempt == 5:
+                hashed.delete()
+                return JsonResponse({'status': False, 'message': 'Too many attempt'}, status=400)
+
+            if not check_password(otp, hashed.otp):
+                hashed.attempt += 1
+                hashed.save()
+                return JsonResponse({'status': False, 'message': 'Invalid OTP'}, status=400)
+
+            hashed.delete()
+            return JsonResponse({'status': True, 'message': 'Confirm Password Reset'})
+        except Exception:
+            return JsonResponse({'status': False, 'message': 'Invalid or Expired OTP'}, status=400)
+    return JsonResponse({'status': False, 'message': 'Invalid Method'}, status=405)

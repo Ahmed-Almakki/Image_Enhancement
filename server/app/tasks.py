@@ -3,12 +3,10 @@ from django.core.mail import EmailMessage
 
 
 @shared_task
-def SendEmail(otp, email):
+def SendEmail(subject, email, message):
     sendemail = EmailMessage(
-            subject='Your Password Rest Code',
-            body=f'''
-                    Your verification code is: {otp}
-                ''',
+            subject=subject,
+            body=message,
             to=[f'{email}']
     )
     sendemail.send(fail_silently=True)
