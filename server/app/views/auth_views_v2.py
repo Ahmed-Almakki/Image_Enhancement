@@ -15,7 +15,7 @@ import secrets
 from datetime import timedelta
 from django.utils import timezone
 
-from ..models import RestPassword
+from ..models import RestPassword, PasswordToken
 from ..tasks import SendEmail
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -206,7 +206,49 @@ def checkOtp(request):
                 return JsonResponse({'status': False, 'message': 'Invalid OTP'}, status=400)
 
             hashed.delete()
-            return JsonResponse({'status': True, 'message': 'Confirm Password Reset'})
+            print('the action is goo')
+            token = secrets.token_urlsafe(24)
+            print('the action is goo 1', token)
+            resetToken = PasswordToken.objects.create(
+                user=user,
+                reset_token=token,
+                expires_at=timezone.now() + timedelta(minutes=5)
+            )
+            print('the action is goo 2 ', resetToken)
+            if not resetToken:
+                return JsonResponse({'status': False, 'message': 'Invalid OTP'})
+            return JsonResponse({'status': True, 'data': {'token': token}})
         except Exception:
             return JsonResponse({'status': False, 'message': 'Invalid or Expired OTP'}, status=400)
+    return JsonResponse({'status': False, 'message': 'Invalid Method'}, status=405)
+
+
+def confirmPassword(request):
+    if request.method == 'POST':
+        body = getattr(request, 'new_body', {})
+        reset_token = body.get('token')
+        password = body.get('password')
+
+        print(f'the password {password}\t{reset_token}')
+        if not password or not reset_token:
+            return JsonResponse({'status': False, 'message': 'Password Required'})
+        try:
+            print('before PasswordToken')
+            user_token = PasswordToken.objects.filter(reset_token=reset_token).first()
+            print(f'user is {user_token}\t{user_token.expires_at}\t{user_token.user_id}')
+            user = get_user_model().objects.filter(id=user_token.user_id).first()
+
+            if timezone.now() > user_token.expires_at:
+                # user_token.delete()
+                print('inside the time zone')
+                return JsonResponse({'status': False, 'message': "Token Expired"}, status=400)
+            user = user_token.user
+            print(f'the user happy {user}')
+            user.set_password(password)
+            user.save()
+
+            user_token.delete()
+            return JsonResponse({'status': True, 'message': 'Successfully Reset Your password'})
+        except Exception:
+            return JsonResponse({'status': False, 'message': 'Retry submitting email again'}, status=400)
     return JsonResponse({'status': False, 'message': 'Invalid Method'}, status=405)

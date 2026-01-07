@@ -8,6 +8,7 @@ urlpatterns = [
     path('api/logout/', auth_views_v1.singout, name='logout'),
     path('api/reset_passowrd/', auth_views_v2.resetPassword, name='reset_password'),
     path('api/resend_password/', auth_views_v2.resendPassword, name='resend_password'),
-    path('api/check_otp/', auth_views_v2.checkOtp, name='checkOtp')
+    path('api/check_otp/', auth_views_v2.checkOtp, name='checkOtp'),
+    path('api/confirm_password/', auth_views_v2.confirmPassword, name="confirmPasswordReset")
 ]
 

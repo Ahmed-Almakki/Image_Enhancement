@@ -39,3 +39,13 @@ class RestPassword(models.Model):
 
     def __str__(self):
         return f"OTP for {self.user.email}"
+
+
+class PasswordToken(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    reset_token= models.CharField(max_length=255, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField(default=0)
+
+    def __str__(self):
+        return f"Password reset token for {self.user.email}"
