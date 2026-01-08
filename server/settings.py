@@ -175,3 +175,7 @@ DEFAULT_FROM_EMAIL = f'Enhance-viosa <{env("HOST_MAIL")}>'
 CELERY_BROKER_URL = 'redis://localhost:6379/0'
 CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
 CELERY_TIMEZONE = 'UTC'
+
+# media
+MEDIA_ROOT = BASE_DIR / "media"
+MEDIA_URL = "/media/"

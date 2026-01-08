@@ -1,8 +1,13 @@
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+import uuid
 
 
+
+def upload_to(instance, filename):
+    ext = filename.split('.')[-1]
+    return f"images/{uuid.uuid4()}.{ext}"
 
 
 # Create your models here.
@@ -20,8 +25,7 @@ class MyUser(AbstractUser):
 class Document(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     title = models.CharField(max_length=50)
-    original_path = models.CharField(max_length=255, blank=True)
-    enhance_path = models.CharField(max_length=255, blank=True)
+    image = models.ImageField(upload_to=upload_to, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
