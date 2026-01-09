@@ -53,3 +53,17 @@ class PasswordToken(models.Model):
 
     def __str__(self):
         return f"Password reset token for {self.user.email}"
+
+
+class TaskStatus(models.TextChoices):
+    PENDING = "PENDING", "pending"
+    STARTED = "STARTED", "Started"
+    FINISH = "FINISH", "finish"
+    FAILURE = "FAILURE", "Failure"
+
+class CeleryTask(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    task_id = models.CharField(max_length=255, unique=True, db_index=True)
+    status = models.CharField(max_length=20, choices=TaskStatus.choices, default=TaskStatus.PENDING)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)

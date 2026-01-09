@@ -8,7 +8,7 @@ import os
 from PIL import Image
 import tensorflow as tf
 
-from .models import Document
+from .models import Document, CeleryTask, TaskStatus
 
 
 
@@ -23,36 +23,41 @@ def SendEmail(subject, email, message):
         return 'Done'
 
 
-@shared_task
-def EnhanceImage(id, imagePath, type):
-        MODEL_PATH = os.path.join(
-                settings.BASE_DIR, 'server', 'app', 'ai', 'btsrn_vgg_epoch_50.h5'
-        )
-        document = Document.objects.filter(id=id).first()
-        model = tf.keras.models.load_model(MODEL_PATH, compile=False)
-        image = tf.io.read_file(imagePath)
-        if type == 'png':
-                image = tf.image.decode_png(image, channels=3)
-        else:
-                image = tf.image.decode_image(image, channels=3)
-        image = tf.cast(image, tf.float32) / 255.0
+@shared_task(bind=True)
+def EnhanceImage(self, id, imagePath, type):
+        try:
+                MODEL_PATH = os.path.join(
+                        settings.BASE_DIR, 'server', 'app', 'ai', 'btsrn_vgg_epoch_50.h5'
+                )
+                CeleryTask.objects.filter(task_id=self.request.id).update(status=TaskStatus.STARTED)
+                document = Document.objects.filter(id=id).first()
+                model = tf.keras.models.load_model(MODEL_PATH, compile=False)
+                image = tf.io.read_file(imagePath)
+                if type == 'png':
+                        image = tf.image.decode_png(image, channels=3)
+                else:
+                        image = tf.image.decode_image(image, channels=3)
+                image = tf.cast(image, tf.float32) / 255.0
 
-        image_x = tf.expand_dims(image, axis=0)
-        result = model.predict(image_x)
+                image_x = tf.expand_dims(image, axis=0)
+                result = model.predict(image_x)
 
-        image_y = np.squeeze(result, axis=0)
+                image_y = np.squeeze(result, axis=0)
 
-         # Convert to PNG in memory
-        result_image = (image_y * 255).astype(np.uint8)
-        img_pil = Image.fromarray(result_image)
-        buffer = io.BytesIO()
-        img_pil.save(buffer, format="PNG")
-        buffer.seek(0)
+                # Convert to PNG in memory
+                result_image = (image_y * 255).astype(np.uint8)
+                img_pil = Image.fromarray(result_image)
+                buffer = io.BytesIO()
+                img_pil.save(buffer, format="PNG")
+                buffer.seek(0)
 
-        # Delete old image file
-        if document.image:
-                document.image.delete(save=False)
+                # Delete old image file
+                if document.image:
+                        document.image.delete(save=False)
 
-        # Save new image
-        document.image.save("enhanced.png", ContentFile(buffer.read()), save=True)
-        return f"Enhanced image saved for document {document.id}"
+                # Save new image
+                document.image.save("enhanced.png", ContentFile(buffer.read()), save=True)
+                CeleryTask.objects.filter(task_id=self.request.id).update(status=TaskStatus.FINISH)
+                return f"Enhanced image saved for document {document.id}"
+        except Exception as e:
+                return f"Faied to save or process the image due to {e}"
