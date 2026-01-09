@@ -35,4 +35,23 @@ def upload_file(request):
             return JsonResponse({'status': False, 'Message': "Can't Upload file"}, status=400)
 
 
+def checkTask(request, task_id):
+    def stream():
+        try:
+            while True:
+                try:
+                    task = CeleryTask.objects.filter(task_id=task_id).first()
+                    yield f"data: {task.status}\n\n"
+                except Exception:
+                    yield f"data: ERROR: task not found\n\n"
+                    break
+
+                if task.status in ["FINISH", "FAILURE"]:
+                    break
+
+                time.sleep(2)
+        except Exception:
+            yield "data: ERROR: Somthing went wrong"
+    return StreamingHttpResponse(stream(), content_type="text/event-stream")
+            
 
