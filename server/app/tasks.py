@@ -2,11 +2,13 @@ from celery import shared_task
 from django.conf import settings
 from django.core.mail import EmailMessage
 from django.core.files.base import ContentFile
+from django.utils import timezone
 import io
 import numpy as np
 import os
 from PIL import Image
 import tensorflow as tf
+from datetime import timedelta
 
 from .models import Document, CeleryTask, TaskStatus
 
@@ -61,3 +63,15 @@ def EnhanceImage(self, id, imagePath, type):
                 return f"Enhanced image saved for document {document.id}"
         except Exception as e:
                 return f"Faied to save or process the image due to {e}"
+
+
+@shared_task
+def old_image_delete_task():
+        beforHour = timezone.now() - timedelta(hour=2)
+        old_celeries = CeleryTask.objects.filter(created_at_lt=beforHour)
+        tasks = Document.objects.filter(created_at_lt=beforHour)
+
+        for item in tasks:
+                if item.image and os.path.exists(str(item.image)):
+                        os.remove(str(item.image))
+        tasks.delete()
