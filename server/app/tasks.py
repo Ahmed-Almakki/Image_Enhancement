@@ -67,11 +67,13 @@ def EnhanceImage(self, id, imagePath, type):
 
 @shared_task
 def old_image_delete_task():
-        beforHour = timezone.now() - timedelta(hour=2)
-        old_celeries = CeleryTask.objects.filter(created_at_lt=beforHour)
-        tasks = Document.objects.filter(created_at_lt=beforHour)
+        print('inside the old image delete')
+        beforHour = timezone.now() - timedelta(hours=2)
+        old_celeries = CeleryTask.objects.filter(created_at__lt=beforHour)
+        tasks = Document.objects.filter(created_at__lt=beforHour)
 
         for item in tasks:
                 if item.image and os.path.exists(str(item.image)):
                         os.remove(str(item.image))
         tasks.delete()
+        return "done executing the schedule task"
