@@ -8,27 +8,34 @@ from ..tasks import EnhanceImage
 
 def upload_file(request):
     if request.method == "POST":
+        print('inside teh upload')
         try:
             form = UploadFileForm(request.POST, request.FILES)
             # Check if form valid
+            print('before teh chekc', form)
             if form.is_valid():
                 uploaded_file = form.cleaned_data['file']
                 fileName = form.cleaned_data['title']
 
+                print('insid the check request to create')
                 lr_img = Document.objects.create(
                     user=request.user,
                     title=fileName,
                     image=uploaded_file 
                 )
+                print(f'create teh low res image {lr_img}')
                 typeImage = lr_img.title.split('.')[-1]
                 imagePath = os.path.join(settings.MEDIA_ROOT, str(lr_img.image))
                 
-                task = EnhanceImage.delay(lr_img.id, imagePath, typeImage)
+                print('now well invode the task')
+                task = EnhanceImage.apply_async(args=[lr_img.id, imagePath, typeImage], countdown=10)
+                print(f"invokd task and this is the id {task.id}")
                 CeleryTask.objects.create(
                     user=request.user,
                     task_id=task.id
                 )
-                return JsonResponse({'status': True})
+                print('create the celery task')
+                return JsonResponse({'status': True, "data": task.id})
             return JsonResponse({'status': False, 'Message': 'Faild to valid the from'}, status=400)
         except Exception as e:
             print(f'Problem due to {e}')
@@ -37,17 +44,22 @@ def upload_file(request):
 
 def checkTask(request, task_id):
     def stream():
+        loop = True
         try:
-            while True:
+            while loop:
                 try:
                     task = CeleryTask.objects.filter(task_id=task_id).first()
                     yield f"data: {task.status}\n\n"
                 except Exception:
                     yield f"data: ERROR: task not found\n\n"
-                    break
+                    loop = False
 
                 if task.status in ["FINISH", "FAILURE"]:
-                    break
+                    if task.status == 'FINISH':
+                        img = Document.objects.filter(user=task.user).first()
+                        img_path = str(img.image)
+                        yield f"data: {img_path}**DONE\n\n"
+                    loop = False
 
                 time.sleep(2)
         except Exception:

@@ -48,6 +48,7 @@ def EnhanceImage(self, id, imagePath, type):
 
                 # Convert to PNG in memory
                 result_image = (image_y * 255).astype(np.uint8)
+                result_image = np.clip(result_image, 0, 255)
                 img_pil = Image.fromarray(result_image)
                 buffer = io.BytesIO()
                 img_pil.save(buffer, format="PNG")
@@ -69,7 +70,7 @@ def EnhanceImage(self, id, imagePath, type):
 def old_image_delete_task():
         print('inside the old image delete')
         beforHour = timezone.now() - timedelta(hours=2)
-        old_celeries = CeleryTask.objects.filter(created_at__lt=beforHour)
+        old_celeries = CeleryTask.objects.filter(created_at__lt=beforHour, status=TaskStatus.FINISH)
         tasks = Document.objects.filter(created_at__lt=beforHour)
 
         for item in tasks:
