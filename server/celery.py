@@ -18,6 +18,6 @@ app.autodiscover_tasks()
 app.conf.beat_schedule = {
     "cleanup-task-every-24-hour": {
         "task": "server.app.tasks.old_image_delete_task",
-        "schedule": crontab(minute='*', hour='*')
+        "schedule": crontab(minute=0, hour=0)
     }
 }

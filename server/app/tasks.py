@@ -13,6 +13,7 @@ from datetime import timedelta
 from .models import Document, CeleryTask, TaskStatus
 
 
+AI_MODELS = {}
 
 @shared_task
 def SendEmail(subject, email, message):
@@ -28,27 +29,32 @@ def SendEmail(subject, email, message):
 @shared_task(bind=True)
 def EnhanceImage(self, id, imagePath, type):
         try:
-                MODEL_PATH = os.path.join(
-                        settings.BASE_DIR, 'server', 'app', 'ai', 'btsrn_vgg_epoch_50.h5'
-                )
+                if 'esrgan' not in AI_MODELS:
+                        print(f"Worker {os.getpid()}: Loading Model for the first time...")
+                        modelPath = os.path.join(settings.BASE_DIR, 'server', 'app', 'ai', 'ESRGAN')
+                        AI_MODELS['esrgan'] = tf.saved_model.load(modelPath)
+                
+                model = AI_MODELS['esrgan']
+                print(list(model.signatures.keys()))
+
                 CeleryTask.objects.filter(task_id=self.request.id).update(status=TaskStatus.STARTED)
                 document = Document.objects.filter(id=id).first()
-                model = tf.keras.models.load_model(MODEL_PATH, compile=False)
+
                 image = tf.io.read_file(imagePath)
                 if type == 'png':
                         image = tf.image.decode_png(image, channels=3)
                 else:
                         image = tf.image.decode_image(image, channels=3)
-                image = tf.cast(image, tf.float32) / 255.0
-
+                
+                image = tf.cast(image, tf.float32)
                 image_x = tf.expand_dims(image, axis=0)
-                result = model.predict(image_x)
 
+                result = model(image_x)
                 image_y = np.squeeze(result, axis=0)
 
                 # Convert to PNG in memory
-                result_image = (image_y * 255).astype(np.uint8)
-                result_image = np.clip(result_image, 0, 255)
+                # result_image = (image_y * 255).astype(np.uint8)
+                result_image = np.clip(image_y, 0, 255).astype(np.uint8)
                 img_pil = Image.fromarray(result_image)
                 buffer = io.BytesIO()
                 img_pil.save(buffer, format="PNG")
@@ -77,4 +83,5 @@ def old_image_delete_task():
                 if item.image and os.path.exists(str(item.image)):
                         os.remove(str(item.image))
         tasks.delete()
+        old_celeries.delete()
         return "done executing the schedule task"
